@@ -224,13 +224,7 @@ func (env *Env) Destructure(binding data.Atom, value data.Atom) (err error) {
 				}
 			}
 		} else {
-			envLogger.Info("A")
-			envLogger.TypeOf(binding)
-			envLogger.Info(binding)
-			envLogger.TypeOf(value)
-			envLogger.Info(value)
 			err = errors.New("destructuring vector, unable to iterate over arg")
-			envLogger.Info("B")
 		}
 
 		// TODO: destructure map
