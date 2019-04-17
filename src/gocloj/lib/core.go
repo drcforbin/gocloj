@@ -185,7 +185,6 @@ func let(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 		if value, err = env.Eval(value); err != nil {
 			return
 		}
-		coreLogger.Info("let ", binding, value)
 
 		if err = env.Destructure(binding, value); err != nil {
 			return
