@@ -170,8 +170,6 @@ func (env *Env) Eval(atom data.Atom) (res data.Atom, err error) {
 }
 
 func (env *Env) Destructure(binding data.Atom, value data.Atom) (err error) {
-	envLogger.Info("destr ", binding, value)
-
 	switch binding := binding.(type) {
 	case *data.SymName:
 		if len(env.scope) > 0 {
@@ -215,10 +213,12 @@ func (env *Env) Destructure(binding data.Atom, value data.Atom) (err error) {
 					}
 				}
 
-				if !handled && valit.Next() {
-					valval = valit.Value()
+				if !handled {
+					if valit.Next() {
+						valval = valit.Value()
+					}
 
-					if err = env.Destructure(binding, valval); err != nil {
+					if err = env.Destructure(b, valval); err != nil {
 						return
 					}
 				}
