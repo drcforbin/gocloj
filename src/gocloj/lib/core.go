@@ -2,7 +2,7 @@ package lib
 
 import (
 	"errors"
-	// "fmt"
+	"fmt"
 	"gocloj/data"
 	"gocloj/log"
 	"gocloj/runtime"
@@ -62,51 +62,6 @@ func quote(env *runtime.Env, args data.SeqIterator) (data.Atom, error) {
 
 	return data.Nil, nil
 }
-
-/*
-func cmpAtom(expected, actual data.Atom) bool {
-	if expected.IsNil() || actual.IsNil() {
-		if expected.IsNil() != actual.IsNil() {
-			return false
-		} else {
-			// both nil
-		}
-	} else {
-		var ok bool
-
-		switch v1 := expected.(type) {
-		case *data.Num:
-			var v2 *data.Num
-			v2, ok = actual.(*data.Num)
-			if !ok || v1.Val.Cmp(v2.Val) != 0 {
-				return false
-			}
-
-		case *data.SymName:
-			var v2 *data.SymName
-			v2, ok = actual.(*data.SymName)
-			if !ok || v1.Name != v2.Name {
-				return false
-			}
-
-		case *data.Pair:
-			var v2 *data.Pair
-			v2, ok = actual.(*data.Pair)
-			if !ok ||
-				!cmpAtom(v1.Key, v2.Key) ||
-				!cmpAtom(v1.Val, v2.Val) {
-				return false
-			}
-
-		default:
-			return false
-		}
-
-	}
-
-	return true
-}
-*/
 
 func def(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	res = data.Nil
@@ -195,4 +150,40 @@ func let(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	res, err = do(env, args)
 
 	return
+}
+
+func assert(env *runtime.Env, args data.SeqIterator) (data.Atom, error) {
+	// Evaluates expr and throws an exception if it does not evaluate to
+	// logical true.
+	/*
+	  ([x]
+	     (when *assert*
+	       `(when-not ~x
+	          (throw (new AssertionError (str "Assert failed: " (pr-str '~x)))))))
+	  ([x message]
+	     (when *assert*
+	       `(when-not ~x
+	          (throw (new AssertionError (str "Assert failed: " ~message "\n" (pr-str '~x))))))))
+	*/
+	if !args.Next() {
+		return data.Nil, errors.New("assert requires an arg")
+	}
+
+	x := args.Value()
+	if value, err := env.Eval(x); err == nil {
+		if !data.Truthy(value) {
+			// do we have a message?
+			if args.Next() {
+				panic(fmt.Sprintf("assert failed: %s; %s",
+					args.Value().String(), x.String()))
+			} else {
+				// no message
+				panic(fmt.Sprintf("assert failed: %s", x.String()))
+			}
+		}
+	} else {
+		return nil, err
+	}
+
+	return data.Nil, nil
 }
