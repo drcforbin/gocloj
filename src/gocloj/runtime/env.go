@@ -38,6 +38,15 @@ func (thunk callableThunk) Hash() uint32 {
 	return uint32(reflect.ValueOf(thunk.fn).Pointer())
 }
 
+func (thunk callableThunk) Equals(atom data.Atom) bool {
+	if val, ok := atom.(*callableThunk); ok {
+		return reflect.ValueOf(thunk.fn).Pointer() ==
+			reflect.ValueOf(val.fn).Pointer()
+	}
+
+	return false
+}
+
 type Env struct {
 	// TODO: namespaces
 	// TODO: make internal a slice, to implement dynamic scope
