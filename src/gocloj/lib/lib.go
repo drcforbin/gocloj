@@ -11,4 +11,8 @@ func AddCore(env *runtime.Env) {
 	env.SetInternalFn("do", do)
 	env.SetInternalFn("let", let)
 	env.SetInternalFn("fn", fn)
+	env.SetInternalFn("assert", assert)
+	env.SetInternalFn("=", op_eq)
+	env.SetInternalFn("not=", op_neq)
+	env.SetInternalFn("not", op_not)
 }
