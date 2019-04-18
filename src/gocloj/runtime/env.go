@@ -64,8 +64,7 @@ func (env *Env) ResolveSym(symName *data.SymName) (atom data.Atom, err error) {
 
 	// check scope next
 	for i := len(env.scope) - 1; i >= 0; i-- {
-		scope := env.scope[i]
-		atom, ok = scope[symName.Name]
+		atom, ok = env.scope[i][symName.Name]
 		if ok {
 			break
 		}
@@ -78,8 +77,29 @@ func (env *Env) ResolveSym(symName *data.SymName) (atom data.Atom, err error) {
 	if !ok {
 		err = errors.New(fmt.Sprintf(
 			"unable to find symbol %s", symName.Name))
-		// atom = symName
 	}
+
+	return
+}
+
+func (env *Env) evalHashMap(m *data.HashMap) (res data.Atom, err error) {
+	res = data.Nil
+	resMap := data.NewHashMap()
+
+	var atom data.Atom
+	it := m.Iterator()
+	for it.Next() {
+		// assumes map is well formed, where each value is a vec pair
+
+		if atom, err = env.Eval(it.Value()); err != nil {
+			return
+		}
+
+		pair := atom.(*data.Vec)
+		resMap.Set(pair.Items[0], pair.Items[1])
+	}
+
+	res = resMap
 
 	return
 }
@@ -103,7 +123,7 @@ func (env *Env) evalVec(vec *data.Vec) (res data.Atom, err error) {
 	return
 }
 
-func (env *Env) evalSeq(lst *data.List) (res data.Atom, err error) {
+func (env *Env) evalList(lst *data.List) (res data.Atom, err error) {
 	res = data.Nil
 
 	// evaluate the first argument
@@ -144,13 +164,7 @@ func (env *Env) Eval(atom data.Atom) (res data.Atom, err error) {
 	}
 
 	switch v := atom.(type) {
-	case *data.Const:
-		res = atom
-
-	case *data.Str:
-		res = atom
-
-	case *data.Num:
+	case *data.Const, *data.Str, *data.Char, *data.Num:
 		res = atom
 
 	case *data.SymName:
@@ -160,7 +174,10 @@ func (env *Env) Eval(atom data.Atom) (res data.Atom, err error) {
 		res, err = env.evalVec(v)
 
 	case *data.List:
-		res, err = env.evalSeq(v)
+		res, err = env.evalList(v)
+
+	case *data.HashMap:
+		res, err = env.evalHashMap(v)
 
 	default:
 		err = errors.New(fmt.Sprintf("unexpected type in eval %T", atom))
@@ -179,33 +196,52 @@ func (env *Env) Destructure(binding data.Atom, value data.Atom) (err error) {
 		}
 
 	case *data.Vec:
-		// TODO: handle &, :as, etc.
-
 		// we need to make sure that value is a sequence too
 		if seq, ok := value.(data.Seq); ok {
 			valit := seq.Iterator()
 
-			for i, b := range binding.Items {
+			for i := 0; i < len(binding.Items); i++ {
+				b := binding.Items[i]
+
 				handled := false
-				var valval data.Atom
-				valval = data.Nil
+				var valval data.Atom = data.Nil
 
 				if sym, ok := b.(*data.SymName); ok {
 					switch sym.Name {
 					case "&":
-						if i != len(binding.Items)-2 {
+						if i > len(binding.Items)-2 {
 							err = errors.New("destructuring & requires a symbol")
 							return
 						}
 
-						vec := data.NewVec()
-						for valit.Next() {
-							vec.Items = append(vec.Items, valit.Value())
+						// get / consume the symbol
+						i++
+						b = binding.Items[i]
+
+						if _, ok := b.(*data.SymName); ok {
+							vec := data.NewVec()
+							for valit.Next() {
+								vec.Items = append(vec.Items, valit.Value())
+							}
+
+							if err = env.Destructure(b, vec); err != nil {
+								return
+							}
+
+							handled = true
+						}
+					case ":as":
+						if i > len(binding.Items)-2 {
+							err = errors.New("destructuring :as requires a symbol")
+							return
 						}
 
-						if err = env.Destructure(
-							binding.Items[len(binding.Items)-1],
-							vec); err != nil {
+						// get / consume the symbol
+						i++
+						b = binding.Items[i]
+
+						// bind symbol to incoming value
+						if err = env.Destructure(b, value); err != nil {
 							return
 						}
 
@@ -227,7 +263,9 @@ func (env *Env) Destructure(binding data.Atom, value data.Atom) (err error) {
 			err = errors.New("destructuring vector, unable to iterate over arg")
 		}
 
+	case *data.HashMap:
 		// TODO: destructure map
+		// TODO: :keys, :strs and :syms
 
 	default:
 		err = errors.New(fmt.Sprintf(
