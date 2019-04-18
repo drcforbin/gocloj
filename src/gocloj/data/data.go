@@ -42,23 +42,33 @@ func (c Const) Equals(atom Atom) bool {
 	}
 
 	return false
-type Str struct {
-	Val string
 }
 
-func (s Str) String() string {
+type Char struct {
+	Val rune
+}
+
+func (c Char) String() string {
 	var builder strings.Builder
-	builder.WriteString("\"")
-	builder.WriteString(s.Val)
-	builder.WriteString("\"")
+	builder.WriteString("\\")
+	builder.WriteRune(c.Val)
 	return builder.String()
 }
 
+func (c Char) IsNil() bool {
 	return false
 }
 
-func (s Str) Hash() uint32 {
-	return hashString(s.Val)
+func (c Char) Hash() uint32 {
+	return uint32(c.Val)
+}
+
+func (c Char) Equals(atom Atom) bool {
+	if val, ok := atom.(*Char); ok {
+		return c.Val == val.Val
+	}
+
+	return false
 }
 
 type Num struct {
