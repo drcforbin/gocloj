@@ -55,6 +55,15 @@ func (c callablefn) Hash() uint32 {
 	return c.binding.Hash() + c.body.Hash()
 }
 
+func (c callablefn) Equals(atom data.Atom) bool {
+	if val, ok := atom.(*callablefn); ok {
+		return c.binding.Equals(val.binding) &&
+			c.body.Equals(val.body)
+	}
+
+	return false
+}
+
 func fn(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	res = data.Nil
 
