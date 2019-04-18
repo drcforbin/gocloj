@@ -15,13 +15,17 @@ func add(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	sum := &big.Int{}
 
 	var (
-		num *data.Num
-		ok  bool
+		atom data.Atom
+		num  *data.Num
+		ok   bool
 	)
 
 	for args.Next() {
-		val := args.Value()
-		if num, ok = val.(*data.Num); ok {
+		if atom, err = env.Eval(args.Value()); err != nil {
+			return
+		}
+
+		if num, ok = atom.(*data.Num); ok {
 			sum.Add(sum, num.Val)
 		} else {
 			err = errors.New("+ arg did not evaluate to a num")
@@ -38,16 +42,20 @@ func mul(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	total := &big.Int{}
 
 	var (
-		num *data.Num
-		ok  bool
+		atom data.Atom
+		num  *data.Num
+		ok   bool
 	)
 
 	// mathLogger.Infof("args %T %+v", args, args.String())
 
 	first := true
 	for args.Next() {
-		val := args.Value()
-		if num, ok = val.(*data.Num); ok {
+		if atom, err = env.Eval(args.Value()); err != nil {
+			return
+		}
+
+		if num, ok = atom.(*data.Num); ok {
 			if first {
 				total.Set(num.Val)
 				first = false
@@ -71,12 +79,17 @@ func inc(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	one := big.NewInt(1)
 
 	var (
-		num *data.Num
-		ok  bool
+		atom data.Atom
+		num  *data.Num
+		ok   bool
 	)
 
 	if args.Next() {
-		if num, ok = args.Value().(*data.Num); ok {
+		if atom, err = env.Eval(args.Value()); err != nil {
+			return
+		}
+
+		if num, ok = atom.(*data.Num); ok {
 			val.Set(num.Val)
 			val = val.Add(val, one)
 		} else {
