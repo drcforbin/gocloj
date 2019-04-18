@@ -7,7 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"regexp"
-	// "strings"
+	"strings"
 )
 
 var tokLogger = log.Get("tokenizer")
@@ -24,6 +24,7 @@ const (
 	TokenRCurly
 	TokenSymbol
 	TokenString
+	TokenChar
 	TokenNil
 	TokenNum
 	TokenQuote
@@ -50,6 +51,8 @@ func (t Token) String() string {
 		return t.s
 	case TokenString:
 		return t.s
+	case TokenChar:
+		return "\\" + t.s
 	case TokenNil:
 		return "<nil>"
 	case TokenNum:
@@ -170,6 +173,9 @@ var tokRegex = regexp.MustCompile(
 var numRegex = regexp.MustCompile(`^-?[0-9]+$`)
 var strRegex = regexp.MustCompile(`^"(?:\\.|[^\\"])*"?$`)
 
+// TODO: other special chars
+var charRegex = regexp.MustCompile(`^\\.$`)
+
 type tokenizer struct {
 	reader *bufio.Reader
 
@@ -204,6 +210,8 @@ func (tz *tokenizer) beginRead() {
 
 }
 
+const quoteStr = "\""
+
 func (tz *tokenizer) handleToken(s string) (tk Token) {
 	tk.s = s
 
@@ -230,7 +238,16 @@ func (tz *tokenizer) handleToken(s string) (tk Token) {
 		if numRegex.MatchString(s) {
 			tk.t = TokenNum
 		} else if strRegex.MatchString(s) {
+			// remove leading/trailing quotes
+			tk.s = strings.TrimPrefix(
+				strings.TrimSuffix(s, quoteStr),
+				quoteStr)
 			tk.t = TokenString
+		} else if charRegex.MatchString(s) {
+			// (current) regex matches two runes,
+			// so indexing second one is safe
+			tk.s = string([]rune(s)[1])
+			tk.t = TokenChar
 		} else {
 			tk.t = TokenSymbol
 		}

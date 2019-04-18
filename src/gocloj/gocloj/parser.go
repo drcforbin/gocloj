@@ -176,6 +176,11 @@ func (p *Parser) handleToken(t Token) (err error) {
 	case TokenString:
 		val := &data.Str{Val: t.s}
 		err = p.pushAtom(val)
+	case TokenChar:
+		// we know it's a single rune from the
+		// tokenizer; this is safe
+		val := &data.Char{Val: []rune(t.s)[0]}
+		err = p.pushAtom(val)
 	case TokenNil:
 		val := data.Nil
 		err = p.pushAtom(val)
