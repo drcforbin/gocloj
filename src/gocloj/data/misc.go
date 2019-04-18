@@ -83,43 +83,5 @@ func Equals(a Atom, b Atom) bool {
 		return true
 	}
 
-	switch va := a.(type) {
-	case *Const:
-		if vb, ok := b.(*Const); ok {
-			return va.Name == vb.Name
-		}
-
-	case *Str:
-		if vb, ok := b.(*Str); ok {
-			return va.Val == vb.Val
-		}
-
-	case *Num:
-		if vb, ok := b.(*Num); ok {
-			return va.Val.Cmp(vb.Val) == 0
-		}
-
-	case *SymName:
-		if vb, ok := b.(*SymName); ok {
-			return va.Name == vb.Name
-		}
-
-	case *Vec:
-		if vb, ok := b.(*Vec); ok {
-			return seqEquals(va.Iterator(), vb.Iterator())
-		}
-
-	case *List:
-		if vb, ok := b.(*List); ok {
-			return seqEquals(va.Iterator(), vb.Iterator())
-		}
-
-	case *HashMap:
-		if vb, ok := b.(*HashMap); ok {
-			return seqEquals(va.Iterator(), vb.Iterator())
-		}
-
-	}
-
-	return false
+	return a.Equals(b)
 }

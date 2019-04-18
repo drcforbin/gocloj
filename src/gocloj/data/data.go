@@ -17,6 +17,7 @@ type Atom interface {
 	fmt.Stringer
 	IsNil() bool
 	Hash() uint32
+	Equals(atom Atom) bool
 }
 
 type Const struct {
@@ -35,6 +36,12 @@ func (c Const) Hash() uint32 {
 	return hashString(c.Name)
 }
 
+func (c Const) Equals(atom Atom) bool {
+	if val, ok := atom.(*Const); ok {
+		return c.Name == val.Name
+	}
+
+	return false
 type Str struct {
 	Val string
 }
@@ -47,7 +54,6 @@ func (s Str) String() string {
 	return builder.String()
 }
 
-func (s *Str) IsNil() bool {
 	return false
 }
 
@@ -63,7 +69,7 @@ func (s Num) String() string {
 	return s.Val.String()
 }
 
-func (n *Num) IsNil() bool {
+func (n Num) IsNil() bool {
 	return false
 }
 
@@ -100,6 +106,14 @@ func (n Num) Hash() uint32 {
 	return fmix(hash, uint32(byteLen))
 }
 
+func (n Num) Equals(atom Atom) bool {
+	if val, ok := atom.(*Num); ok {
+		return n.Val.Cmp(val.Val) == 0
+	}
+
+	return false
+}
+
 type SymName struct {
 	Name string
 }
@@ -118,6 +132,14 @@ func (s *SymName) IsNil() bool {
 
 func (s SymName) Hash() uint32 {
 	return hashString(s.Name)
+}
+
+func (s SymName) Equals(atom Atom) bool {
+	if val, ok := atom.(*SymName); ok {
+		return s.Name == val.Name
+	}
+
+	return false
 }
 
 type SeqIterator interface {

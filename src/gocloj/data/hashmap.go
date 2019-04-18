@@ -56,6 +56,29 @@ func (m HashMap) Hash() uint32 {
 	return mixCollHash(hash, count)
 }
 
+func (m HashMap) Equals(atom Atom) bool {
+	if val, ok := atom.(*HashMap); ok {
+		if len(m.items) != len(val.items) {
+			return false
+		}
+
+		// just need to check one
+		if len(m.items) == 0 {
+			return true
+		}
+
+		for _, pair := range m.items {
+			if !pair.val.Equals(val.Get(pair.key)) {
+				return false
+			}
+
+			return true
+		}
+	}
+
+	return false
+}
+
 func (m HashMap) Length() int {
 	if !m.IsNil() {
 		return len(m.items)

@@ -85,6 +85,14 @@ func (l *List) Hash() uint32 {
 	return mixCollHash(hash, count)
 }
 
+func (l *List) Equals(atom Atom) bool {
+	if val, ok := atom.(Seq); ok {
+		return seqEquals(l.Iterator(), val.Iterator())
+	}
+
+	return false
+}
+
 func (l *List) Length() int {
 	count := 0
 

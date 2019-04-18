@@ -41,6 +41,14 @@ func (v Vec) Hash() uint32 {
 	return mixCollHash(hash, uint32(len(v.Items)))
 }
 
+func (v Vec) Equals(atom Atom) bool {
+	if val, ok := atom.(Seq); ok {
+		return seqEquals(v.Iterator(), val.Iterator())
+	}
+
+	return false
+}
+
 func (v Vec) Length() int {
 	if !v.IsNil() {
 		return len(v.Items)
