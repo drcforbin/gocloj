@@ -1,4 +1,4 @@
-package data
+package atom
 
 import (
 	"strings"
@@ -31,6 +31,7 @@ func (v *Vec) IsNil() bool {
 	return false
 }
 
+// Returns a hash value for this Atom.
 func (v Vec) Hash() uint32 {
 	hash := uint32(1)
 
@@ -41,9 +42,10 @@ func (v Vec) Hash() uint32 {
 	return mixCollHash(hash, uint32(len(v.Items)))
 }
 
+// Returns whether this Atom is equivalent to a given atom.
 func (v Vec) Equals(atom Atom) bool {
 	if val, ok := atom.(Seq); ok {
-		return seqEquals(v.Iterator(), val.Iterator())
+		return SeqEquals(v, val)
 	}
 
 	return false

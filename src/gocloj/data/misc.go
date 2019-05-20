@@ -3,25 +3,26 @@ package data
 import (
 	"errors"
 	"fmt"
+	"gocloj/data/atom"
 )
 
-func Truthy(atom Atom) bool {
-	if atom == False ||
-		atom == Nil ||
-		atom.IsNil() {
+func Truthy(a atom.Atom) bool {
+	if a == atom.False ||
+		a == atom.Nil ||
+		a.IsNil() {
 		return false
 	}
 
 	return true
 }
 
-func ValidBinding(binding Atom) (err error) {
+func ValidBinding(binding atom.Atom) (err error) {
 	// TODO: handle vec and map
 	switch v := binding.(type) {
-	case *SymName:
+	case *atom.SymName, *atom.Keyword:
 		// pass, leaving err nil
 
-	case *Vec:
+	case *atom.Vec:
 		for _, atom := range v.Items {
 			if err = ValidBinding(atom); err != nil {
 				return
@@ -38,38 +39,7 @@ func ValidBinding(binding Atom) (err error) {
 	return
 }
 
-/*
-// -1 if x <  y
-//  0 if x == y
-// +1 if x >  y
-func Compare(atom1 Atom, atom2 Atom) (cmp int) {
-// NOTE: T > everything else
-// NOTE: nil < everything else
-}
-*/
-
-func seqEquals(ita SeqIterator, itb SeqIterator) bool {
-	// walk a's
-	for ita.Next() {
-		// are we out of b's?
-		if !itb.Next() {
-			return false
-		}
-
-		if !Equals(ita.Value(), itb.Value()) {
-			return false
-		}
-	}
-
-	// do we still have more b's?
-	if itb.Next() {
-		return false
-	}
-
-	return true
-}
-
-func Equals(a Atom, b Atom) bool {
+func Equals(a atom.Atom, b atom.Atom) bool {
 	// is one nil but not the other?
 	aisnil := a.IsNil()
 	bisnil := b.IsNil()

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	//"gocloj/data/hashmap"
 	"gocloj/gocloj"
 	"gocloj/lib"
 	"gocloj/log"
@@ -59,14 +60,10 @@ func run(r io.Reader, file string) {
 	}
 }
 
-/*
-func token2(r io.Reader, file string) {
-	tz := gocloj.NewTokenizer2(r, file)
-	for tz.Next() {
-		_ = tz.Value()
-	}
+func dump() {
+	// TODO
+	// phm.Dump()
 }
-*/
 
 func token(r io.Reader, file string) {
 	tz := gocloj.NewTokenizer(r, file)
@@ -83,18 +80,25 @@ func main() {
 	var filename string
 
 	runCmd := flag.NewFlagSet("run", flag.ExitOnError)
+	dumpCmd := flag.NewFlagSet("dump", flag.ExitOnError)
 	// runCmd.StringVar(&filename, "file", "", "path to config file")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s COMMAND [OPTIONS]\n\n", os.Args[0])
 		fmt.Fprint(os.Stderr, "Commands:\n")
 		fmt.Fprint(os.Stderr, "  run - run files\n")
+		fmt.Fprint(os.Stderr, "  dump - dumps stuff\n")
 		flag.PrintDefaults()
 	}
 
 	runCmd.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s run [OPTIONS] [FILENAME]\n\n", os.Args[0])
 		fmt.Fprint(os.Stderr, "Options:\n")
+		runCmd.PrintDefaults()
+	}
+
+	dumpCmd.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s dump\n", os.Args[0])
 		runCmd.PrintDefaults()
 	}
 
@@ -119,6 +123,13 @@ func main() {
 			cmd.Usage()
 			os.Exit(1)
 		}
+
+	case "dump":
+		cmd = dumpCmd
+		cmd.Parse(os.Args[2:])
+
+		dump()
+		os.Exit(0)
 
 	default:
 		flag.Usage()

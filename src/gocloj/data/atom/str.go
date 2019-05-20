@@ -1,4 +1,4 @@
-package data
+package atom
 
 import (
 	"strings"
@@ -20,10 +20,12 @@ func (s Str) IsNil() bool {
 	return false
 }
 
+// Returns a hash value for this Atom.
 func (s Str) Hash() uint32 {
 	return hashString(s.Val)
 }
 
+// Returns whether this Atom is equivalent to a given atom.
 func (s Str) Equals(atom Atom) bool {
 	if val, ok := atom.(*Str); ok {
 		return s.Val == val.Val

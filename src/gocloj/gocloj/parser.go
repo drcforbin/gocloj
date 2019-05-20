@@ -1,7 +1,8 @@
 package gocloj
 
 import (
-	"gocloj/data"
+	"gocloj/data/atom"
+	"gocloj/data/hashmap"
 	"gocloj/log"
 	"math/big"
 )
@@ -10,34 +11,36 @@ var parserLogger = log.Get("parser")
 
 // special value indicating that we have not
 // yet found a token
-var noToken = &data.Const{Name: "notoken"}
+var noToken = &atom.Const{Name: "notoken"}
 
 // TODO: macros
 
 type AtomIterator interface {
 	Next() bool
-	Value() (val data.Atom)
+	Value() (val atom.Atom)
 	Err() error
 }
 
 type parseFrame struct {
-	seq data.Atom
-	// used when building a data.List
-	tail *data.ListNode
+	seq atom.Atom
+	// used when building a atom.List
+	tail *atom.ListNode
+	// used when building a map
+	key atom.Atom
 
 	quoteNext bool
 }
 
-func newParseFrame(seq data.Atom) parseFrame {
+func newParseFrame(seq atom.Atom) parseFrame {
 	return parseFrame{
 		seq: seq,
 	}
 }
 
-func (f *parseFrame) push(val data.Atom) {
+func (f *parseFrame) push(val atom.Atom) {
 	switch s := f.seq.(type) {
-	case *data.List:
-		node := &data.ListNode{Value: val}
+	case *atom.List:
+		node := &atom.ListNode{Value: val}
 		if f.tail != nil {
 			// add to end
 			f.tail.Next = node
@@ -46,8 +49,16 @@ func (f *parseFrame) push(val data.Atom) {
 			s.Head = node
 		}
 		f.tail = node
-	case *data.Vec:
+	case *atom.Vec:
 		s.Items = append(s.Items, val)
+	case *hashmap.PersistentHashMap:
+		if f.key == nil {
+			f.key = val
+		} else {
+			key := f.key
+			f.key = nil
+			f.seq = s.Assoc(key, val)
+		}
 	default:
 		// TODO: log
 	}
@@ -58,7 +69,7 @@ type Parser struct {
 	stack     []parseFrame
 	quoteNext bool
 
-	value data.Atom
+	value atom.Atom
 
 	err error
 }
@@ -80,7 +91,7 @@ func (p *Parser) topFrame() (frame *parseFrame) {
 	return
 }
 
-func (p *Parser) pushAtom(atom data.Atom) (err error) {
+func (p *Parser) pushAtom(atom atom.Atom) (err error) {
 	if frame := p.topFrame(); frame != nil {
 		// wrap in quote if needed
 		if frame.quoteNext {
@@ -106,12 +117,13 @@ func (p *Parser) parseError(msg string) error {
 	return NewError(msg, pos.Line, pos.File)
 }
 
-func quoteAtom(atom data.Atom) data.Atom {
-	list := &data.List{
-		Head: &data.ListNode{
-			Value: &data.SymName{Name: "quote"},
-			Next: &data.ListNode{
-				Value: atom,
+// TODO: rename quoteVal
+func quoteAtom(val atom.Atom) atom.Atom {
+	list := &atom.List{
+		Head: &atom.ListNode{
+			Value: &atom.SymName{Name: "quote"},
+			Next: &atom.ListNode{
+				Value: val,
 			},
 		},
 	}
@@ -119,6 +131,8 @@ func quoteAtom(atom data.Atom) data.Atom {
 }
 
 func (p *Parser) endFrame() (err error) {
+	// TODO: error on map with leftover keys!
+
 	switch len(p.stack) {
 	case 0:
 		err = p.parseError("unhandled empty stack on RParen")
@@ -160,36 +174,39 @@ func (p *Parser) endFrame() (err error) {
 func (p *Parser) handleToken(t Token) (err error) {
 	switch t.t {
 	case TokenLParen:
-		frame := newParseFrame(data.NewList())
+		frame := newParseFrame(atom.NewList())
 		p.stack = append(p.stack, frame)
 	case TokenLBracket:
-		frame := newParseFrame(data.NewVec())
+		frame := newParseFrame(atom.NewVec())
 		p.stack = append(p.stack, frame)
 	case TokenLCurly:
-		frame := newParseFrame(data.NewHashMap())
+		frame := newParseFrame(hashmap.NewPersistentHashMap())
 		p.stack = append(p.stack, frame)
 	case TokenRParen, TokenRBracket, TokenRCurly:
 		err = p.endFrame()
 	case TokenSymbol:
-		val := &data.SymName{Name: t.s}
+		val := &atom.SymName{Name: t.s}
 		err = p.pushAtom(val)
 	case TokenString:
-		val := &data.Str{Val: t.s}
+		val := &atom.Str{Val: t.s}
+		err = p.pushAtom(val)
+	case TokenKeyword:
+		val := &atom.Keyword{Name: t.s}
 		err = p.pushAtom(val)
 	case TokenChar:
 		// we know it's a single rune from the
 		// tokenizer; this is safe
-		val := &data.Char{Val: []rune(t.s)[0]}
+		val := &atom.Char{Val: []rune(t.s)[0]}
 		err = p.pushAtom(val)
 	case TokenNil:
-		val := data.Nil
+		val := atom.Nil
 		err = p.pushAtom(val)
 	case TokenNum:
 		// note: only handling base 10
 		i := &big.Int{}
 		i.SetString(t.s, 10)
 
-		val := &data.Num{Val: i}
+		val := &atom.Num{Val: i}
 
 		err = p.pushAtom(val)
 	case TokenQuote:
@@ -224,7 +241,7 @@ func (p *Parser) Next() bool {
 	return false
 }
 
-func (p *Parser) Value() (val data.Atom) {
+func (p *Parser) Value() (val atom.Atom) {
 	if p.err == nil {
 		val = p.value
 		p.value = noToken

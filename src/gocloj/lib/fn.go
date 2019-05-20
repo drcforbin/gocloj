@@ -4,17 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"gocloj/data"
+	"gocloj/data/atom"
 	// "gocloj/log"
 	"gocloj/runtime"
 )
 
 type callablefn struct {
-	binding *data.Vec
-	body    *data.Vec
+	binding *atom.Vec
+	body    *atom.Vec
 }
 
-func (c callablefn) Exec(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
-	res = data.Nil
+func (c callablefn) Exec(env *runtime.Env, args atom.SeqIterator) (res atom.Atom, err error) {
+	res = atom.Nil
 
 	env.PushScope()
 	defer env.PopScope()
@@ -25,7 +26,7 @@ func (c callablefn) Exec(env *runtime.Env, args data.SeqIterator) (res data.Atom
 			return
 		}
 
-		var value data.Atom
+		var value atom.Atom
 		if value, err = env.Eval(args.Value()); err != nil {
 			return
 		}
@@ -51,11 +52,13 @@ func (c callablefn) IsNil() bool {
 	return false
 }
 
+// Returns a hash value for this Atom.
 func (c callablefn) Hash() uint32 {
 	return c.binding.Hash() + c.body.Hash()
 }
 
-func (c callablefn) Equals(atom data.Atom) bool {
+// Returns whether this Atom is equivalent to a given atom.
+func (c callablefn) Equals(atom atom.Atom) bool {
 	if val, ok := atom.(*callablefn); ok {
 		return c.binding.Equals(val.binding) &&
 			c.body.Equals(val.body)
@@ -64,8 +67,8 @@ func (c callablefn) Equals(atom data.Atom) bool {
 	return false
 }
 
-func fn(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
-	res = data.Nil
+func fn(env *runtime.Env, args atom.SeqIterator) (res atom.Atom, err error) {
+	res = atom.Nil
 
 	if !args.Next() {
 		err = errors.New("fn requires an args")
@@ -74,9 +77,9 @@ func fn(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 
 	// TODO: metadata
 	val := args.Value()
-	var binding *data.Vec
+	var binding *atom.Vec
 	var ok bool
-	if binding, ok = val.(*data.Vec); !ok {
+	if binding, ok = val.(*atom.Vec); !ok {
 		err = errors.New("expected fn arg to be a vec of args")
 		return
 	}
@@ -85,7 +88,7 @@ func fn(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 		return
 	}
 
-	body := data.NewVec()
+	body := atom.NewVec()
 	for args.Next() {
 		body.Items = append(body.Items, args.Value())
 	}

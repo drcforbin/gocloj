@@ -28,8 +28,46 @@ const (
 	TokenNil
 	TokenNum
 	TokenQuote
+	TokenKeyword
 	TokenEOF
 )
+
+func (tt TokenType) String() string {
+	switch tt {
+	case TokenNone:
+		return "TokenNone"
+	case TokenLParen:
+		return "TokenLParen"
+	case TokenRParen:
+		return "TokenRParen"
+	case TokenLBracket:
+		return "TokenLBracket"
+	case TokenRBracket:
+		return "TokenRBracket"
+	case TokenLCurly:
+		return "TokenLCurly"
+	case TokenRCurly:
+		return "TokenRCurly"
+	case TokenSymbol:
+		return "TokenSymbol"
+	case TokenString:
+		return "TokenString"
+	case TokenChar:
+		return "TokenChar"
+	case TokenNil:
+		return "TokenNil"
+	case TokenNum:
+		return "TokenNum"
+	case TokenQuote:
+		return "TokenQuote"
+	case TokenKeyword:
+		return "TokenKeyword"
+	case TokenEOF:
+		return "TokenEOF"
+	default:
+		return "unexpected"
+	}
+}
 
 func (t Token) String() string {
 	switch t.t {
@@ -59,6 +97,8 @@ func (t Token) String() string {
 		return t.s
 	case TokenQuote:
 		return "'"
+	case TokenKeyword:
+		return ":" + t.s
 	case TokenEOF:
 		return "<eof>"
 	default:
@@ -167,11 +207,14 @@ var tokRegex = regexp.MustCompile(
 		`"(?:\\.|[^\\"])*"?|` +
 		// match comments
 		`;.*|` +
+		// keyword
+		`::?(?:\w+/?)*\w+|` +
 		// capture token chars
 		`[^\s\[\]{}()'"` + "`,;]*)",
 )
 var numRegex = regexp.MustCompile(`^-?[0-9]+$`)
 var strRegex = regexp.MustCompile(`^"(?:\\.|[^\\"])*"?$`)
+var keywordRegex = regexp.MustCompile(`^::?(?:\w/?)*\w$`)
 
 // TODO: other special chars
 var charRegex = regexp.MustCompile(`^\\.$`)
@@ -248,6 +291,8 @@ func (tz *tokenizer) handleToken(s string) (tk Token) {
 			// so indexing second one is safe
 			tk.s = string([]rune(s)[1])
 			tk.t = TokenChar
+		} else if keywordRegex.MatchString(s) {
+			tk.t = TokenKeyword
 		} else {
 			tk.t = TokenSymbol
 		}
@@ -281,30 +326,6 @@ func (tz *tokenizer) Next() bool {
 	if tz.parsePos >= len(tz.buffer) {
 		tz.tk = Token{t: TokenEOF}
 	}
-	/*
-		// return 'next' if we have one
-		if tz.tkNext.t != TokenNone {
-			// copy to curr and reset
-			tz.tkCurr = tz.tkNext
-			tz.tkNext.t = TokenNone
-			return true
-		} else {
-			// otherwise, hunt for tokens
-
-			for tz.handleRune != nil {
-				// get next rune
-				if r, ok := tz.readRune(); ok {
-					tk := tz.handleRune(tz, r)
-
-					// return true if we got a token
-					if tk.t != TokenNone {
-						tz.tkCurr = tk
-						return true
-					}
-				}
-			}
-		}
-	*/
 
 	return false
 }

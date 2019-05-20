@@ -4,14 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"gocloj/data"
+	"gocloj/data/atom"
 	"gocloj/log"
 	"gocloj/runtime"
 )
 
 var coreLogger = log.Get("core")
 
-func if_(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
-	res = data.Nil
+func if_(env *runtime.Env, args atom.SeqIterator) (res atom.Atom, err error) {
+	res = atom.Nil
 
 	if !args.Next() {
 		err = errors.New("if missing predicate")
@@ -19,13 +20,13 @@ func if_(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	}
 
 	// evaluate the test
-	var testRes data.Atom
+	var testRes atom.Atom
 	if testRes, err = env.Eval(args.Value()); err != nil {
 		return
 	}
 
 	// find true clause
-	var truePart data.Atom
+	var truePart atom.Atom
 	if args.Next() {
 		val := args.Value()
 		truePart = val
@@ -37,7 +38,7 @@ func if_(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 			res, err = env.Eval(truePart)
 		} else {
 			// find false clause
-			var falsePart data.Atom
+			var falsePart atom.Atom
 			if args.Next() {
 				val := args.Value()
 				falsePart = val
@@ -52,7 +53,7 @@ func if_(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	return
 }
 
-func quote(env *runtime.Env, args data.SeqIterator) (data.Atom, error) {
+func quote(env *runtime.Env, args atom.SeqIterator) (atom.Atom, error) {
 	if args.Next() {
 		val := args.Value()
 		if !val.IsNil() {
@@ -60,22 +61,22 @@ func quote(env *runtime.Env, args data.SeqIterator) (data.Atom, error) {
 		}
 	}
 
-	return data.Nil, nil
+	return atom.Nil, nil
 }
 
-func def(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
-	res = data.Nil
+func def(env *runtime.Env, args atom.SeqIterator) (res atom.Atom, err error) {
+	res = atom.Nil
 
 	if !args.Next() {
-		res = &data.Str{Val: "unexpected nil args for def"}
+		res = &atom.Str{Val: "unexpected nil args for def"}
 		return
 	}
 
 	val := args.Value()
-	if sym, ok := val.(*data.SymName); ok {
+	if sym, ok := val.(*atom.SymName); ok {
 		// advance to next arg
 		if args.Next() {
-			var val data.Atom
+			var val atom.Atom
 			if val, err = env.Eval(args.Value()); err != nil {
 				return
 			}
@@ -93,8 +94,8 @@ func def(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	return
 }
 
-func do(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
-	res = data.Nil
+func do(env *runtime.Env, args atom.SeqIterator) (res atom.Atom, err error) {
+	res = atom.Nil
 
 	for args.Next() {
 		if res, err = env.Eval(args.Value()); err != nil {
@@ -105,8 +106,8 @@ func do(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	return
 }
 
-func let(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
-	res = data.Nil
+func let(env *runtime.Env, args atom.SeqIterator) (res atom.Atom, err error) {
+	res = atom.Nil
 
 	if !args.Next() {
 		err = errors.New("let requires an args")
@@ -115,9 +116,9 @@ func let(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 
 	// TODO: metadata
 	val := args.Value()
-	var vec *data.Vec
+	var vec *atom.Vec
 	var ok bool
-	if vec, ok = val.(*data.Vec); !ok {
+	if vec, ok = val.(*atom.Vec); !ok {
 		err = errors.New("expected let arg to be a vec of args")
 		return
 	}
@@ -152,7 +153,7 @@ func let(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	return
 }
 
-func assert(env *runtime.Env, args data.SeqIterator) (data.Atom, error) {
+func assert(env *runtime.Env, args atom.SeqIterator) (atom.Atom, error) {
 	// Evaluates expr and throws an exception if it does not evaluate to
 	// logical true.
 	/*
@@ -166,7 +167,7 @@ func assert(env *runtime.Env, args data.SeqIterator) (data.Atom, error) {
 	          (throw (new AssertionError (str "Assert failed: " ~message "\n" (pr-str '~x))))))))
 	*/
 	if !args.Next() {
-		return data.Nil, errors.New("assert requires an arg")
+		return atom.Nil, errors.New("assert requires an arg")
 	}
 
 	x := args.Value()
@@ -185,5 +186,5 @@ func assert(env *runtime.Env, args data.SeqIterator) (data.Atom, error) {
 		return nil, err
 	}
 
-	return data.Nil, nil
+	return atom.Nil, nil
 }

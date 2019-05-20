@@ -3,16 +3,17 @@ package lib
 import (
 	"errors"
 	"gocloj/data"
+	"gocloj/data/atom"
 	"gocloj/runtime"
 )
 
-func op_eq(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
-	res = data.False
+func op_eq(env *runtime.Env, args atom.SeqIterator) (res atom.Atom, err error) {
+	res = atom.False
 
-	var a, b data.Atom
+	var a, b atom.Atom
 
 	if !args.Next() {
-		return data.Nil, errors.New("= requires two args")
+		return atom.Nil, errors.New("= requires two args")
 	}
 
 	if a, err = env.Eval(args.Value()); err != nil {
@@ -20,7 +21,7 @@ func op_eq(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	}
 
 	if !args.Next() {
-		return data.Nil, errors.New("= requires two args")
+		return atom.Nil, errors.New("= requires two args")
 	}
 
 	if b, err = env.Eval(args.Value()); err != nil {
@@ -28,19 +29,19 @@ func op_eq(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
 	}
 
 	if a.Equals(b) {
-		res = data.True
+		res = atom.True
 	}
 
 	return
 }
 
-func op_neq(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
-	res = data.False
+func op_neq(env *runtime.Env, args atom.SeqIterator) (res atom.Atom, err error) {
+	res = atom.False
 
-	var a, b data.Atom
+	var a, b atom.Atom
 
 	if !args.Next() {
-		return data.Nil, errors.New("not= requires two args")
+		return atom.Nil, errors.New("not= requires two args")
 	}
 
 	if a, err = env.Eval(args.Value()); err != nil {
@@ -48,7 +49,7 @@ func op_neq(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) 
 	}
 
 	if !args.Next() {
-		return data.Nil, errors.New("= requires two args")
+		return atom.Nil, errors.New("= requires two args")
 	}
 
 	if b, err = env.Eval(args.Value()); err != nil {
@@ -56,25 +57,25 @@ func op_neq(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) 
 	}
 
 	if !a.Equals(b) {
-		res = data.True
+		res = atom.True
 	}
 
 	return
 }
-func op_not(env *runtime.Env, args data.SeqIterator) (res data.Atom, err error) {
-	res = data.False
+func op_not(env *runtime.Env, args atom.SeqIterator) (res atom.Atom, err error) {
+	res = atom.False
 
 	if !args.Next() {
-		return data.Nil, errors.New("not requires an arg")
+		return atom.Nil, errors.New("not requires an arg")
 	}
 
-	var val data.Atom
+	var val atom.Atom
 	if val, err = env.Eval(args.Value()); err != nil {
 		return
 	}
 
 	if !data.Truthy(val) {
-		res = data.True
+		res = atom.True
 	}
 
 	return

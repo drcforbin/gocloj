@@ -1,4 +1,4 @@
-package data
+package atom
 
 import (
 	"strings"
@@ -70,6 +70,7 @@ func (l *List) IsNil() bool {
 	return false
 }
 
+// Returns a hash value for this Atom.
 func (l *List) Hash() uint32 {
 	hash := uint32(1)
 	count := uint32(0)
@@ -85,9 +86,10 @@ func (l *List) Hash() uint32 {
 	return mixCollHash(hash, count)
 }
 
+// Returns whether this Atom is equivalent to a given atom.
 func (l *List) Equals(atom Atom) bool {
 	if val, ok := atom.(Seq); ok {
-		return seqEquals(l.Iterator(), val.Iterator())
+		return SeqEquals(l, val)
 	}
 
 	return false

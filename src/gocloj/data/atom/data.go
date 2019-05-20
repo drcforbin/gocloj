@@ -1,24 +1,13 @@
-package data
+package atom
 
 import (
-	"fmt"
 	"gocloj/log"
 	"math/big"
+	"math/bits"
 	"strings"
 )
 
 var dataLogger = log.Get("data")
-
-var Nil = &Const{Name: "nil"}
-var True = &Const{Name: "true"}
-var False = &Const{Name: "false"}
-
-type Atom interface {
-	fmt.Stringer
-	IsNil() bool
-	Hash() uint32
-	Equals(atom Atom) bool
-}
 
 type Const struct {
 	Name string
@@ -32,10 +21,12 @@ func (c Const) IsNil() bool {
 	return false
 }
 
+// Returns a hash value for this Atom.
 func (c Const) Hash() uint32 {
 	return hashString(c.Name)
 }
 
+// Returns whether this Atom is equivalent to a given atom.
 func (c Const) Equals(atom Atom) bool {
 	if val, ok := atom.(*Const); ok {
 		return c.Name == val.Name
@@ -59,10 +50,12 @@ func (c Char) IsNil() bool {
 	return false
 }
 
+// Returns a hash value for this Atom.
 func (c Char) Hash() uint32 {
 	return uint32(c.Val)
 }
 
+// Returns whether this Atom is equivalent to a given atom.
 func (c Char) Equals(atom Atom) bool {
 	if val, ok := atom.(*Char); ok {
 		return c.Val == val.Val
@@ -83,39 +76,27 @@ func (n Num) IsNil() bool {
 	return false
 }
 
+// Returns a hash value for this Atom.
 func (n Num) Hash() uint32 {
-	hash := seed
+	// not calling n.Val.Bytes to save allocation
+	const wordBytes = bits.UintSize / 8
+	var bytes [wordBytes]byte
 
-	bytes := n.Val.Bytes()
-	byteLen := len(bytes)
+	// NOTE: THIS DISCARDS ALL BUT LAST WORD!
 
-	for idx := 0; idx < byteLen; idx += 4 {
-		val := uint32(0)
-
-		chunkLen := (byteLen - idx) % 4
-		switch chunkLen {
-		case 1:
-			val = uint32(bytes[idx+0])
-		case 2:
-			val = uint32(bytes[idx+0])<<8 |
-				uint32(bytes[idx+1])
-		case 3:
-			val = uint32(bytes[idx+0])<<16 |
-				uint32(bytes[idx+1])<<8 |
-				uint32(bytes[idx+2])
-		default: // bytes left >= 4
-			val = uint32(bytes[idx+0])<<24 |
-				uint32(bytes[idx+1])<<16 |
-				uint32(bytes[idx+2])<<8 |
-				uint32(bytes[idx+3])
+	valWords := n.Val.Bits()
+	for i := 0; i < len(valWords); i++ {
+		valWord := valWords[i]
+		for j := 0; j < wordBytes; j++ {
+			bytes[j] = byte(valWord)
+			valWord >>= 8
 		}
-
-		hash = mixH1(hash, mixK1(val))
 	}
 
-	return fmix(hash, uint32(byteLen))
+	return MurmurHash3(bytes[:], 0)
 }
 
+// Returns whether this Atom is equivalent to a given atom.
 func (n Num) Equals(atom Atom) bool {
 	if val, ok := atom.(*Num); ok {
 		return n.Val.Cmp(val.Val) == 0
@@ -140,10 +121,12 @@ func (s *SymName) IsNil() bool {
 	return false
 }
 
+// Returns a hash value for this Atom.
 func (s SymName) Hash() uint32 {
 	return hashString(s.Name)
 }
 
+// Returns whether this Atom is equivalent to a given atom.
 func (s SymName) Equals(atom Atom) bool {
 	if val, ok := atom.(*SymName); ok {
 		return s.Name == val.Name
@@ -152,16 +135,32 @@ func (s SymName) Equals(atom Atom) bool {
 	return false
 }
 
-type SeqIterator interface {
-	Next() bool
-	Value() Atom
+type Keyword struct {
+	Name string
 }
 
-type Seq interface {
-	Iterator() SeqIterator
+func (k Keyword) String() string {
+	if k.Name != "" {
+		return k.Name
+	} else {
+		return "nil"
+	}
 }
 
-type Indexable interface {
-	Length() int
-	Item(idx int) Atom
+func (k *Keyword) IsNil() bool {
+	return false
+}
+
+// Returns a hash value for this Atom.
+func (k Keyword) Hash() uint32 {
+	return hashString(k.Name)
+}
+
+// Returns whether this Atom is equivalent to a given atom.
+func (k Keyword) Equals(atom Atom) bool {
+	if val, ok := atom.(*Keyword); ok {
+		return k.Name == val.Name
+	}
+
+	return false
 }
