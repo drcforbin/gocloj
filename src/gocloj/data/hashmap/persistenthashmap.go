@@ -199,6 +199,7 @@ func (p *PersistentHashMap) Without(key atom.Atom) PersistentMap {
 	} else {
 		// ok to ignore here; without call will return a new
 		// root if a leaf was removed; this flag is redundant
+		// todo: remove removedLeaf
 		removedLeaf := false
 		newroot := p.root.without(0, key.Hash(), key, &removedLeaf)
 		if newroot == p.root {

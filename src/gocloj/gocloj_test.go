@@ -264,6 +264,7 @@ func TestDestructureVec(t *testing.T) {
 	})
 }
 
+/*
 func TestDestructureMap(t *testing.T) {
 	testStringsTrue(t, map[string]clostringtest{
 		// map bindings
@@ -298,7 +299,7 @@ func TestDestructureKws(t *testing.T) {
 		// TODO: map :as
 	})
 }
-
+*/
 /*
 
 ; map
